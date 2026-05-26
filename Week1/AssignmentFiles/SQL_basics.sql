@@ -24,16 +24,23 @@ select *
 from products 
 where name like "%Latte%";
 -- Q5) Show distinct payment methods used in the dataset.
-
+select distinct payment_method
+from orders
 -- Q6) For each store, list its name and city/state (one row per store).
-
+select name, city, state
+from stores;
 -- Q7) From orders, show order_id, status, and a computed column total_items
 --     that counts how many items are in each order.
 
 -- Q8) Show orders placed on '2025-09-04' (any time that day).
-
+select order_id, order_datetime
+from orders
+where date(order_datetime) = '2025-09-04';
 -- Q9) Return the top 3 most expensive products (price, name).
-
+select price, name
+from products
+order by price desc
+limit 3;
 -- Q10) Show customer full names as a single column 'customer_name'
 --      in the format "Last, First".
 
