@@ -31,13 +31,18 @@ select name, city, state
 from stores;
 -- Q7) From orders, show order_id, status, and a computed column total_items
 --     that counts how many items are in each order.
-select order_id, status, count(*) as total_items
+
+select orders.order_id, orders.status, sum(order_items.quantity) as total_items 
 from orders
-group by order_id, status;
+join order_items on orders.order_id = order_items.order_id
+group by order_id;
+
 -- Q8) Show orders placed on '2025-09-04' (any time that day).
-select order_id, order_datetime
+
+select order_id, date(order_datetime) 
 from orders
 where date(order_datetime) = '2025-09-04';
+
 -- Q9) Return the top 3 most expensive products (price, name).
 select price, name
 from products
