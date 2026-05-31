@@ -30,6 +30,8 @@ GROUP BY DATE(order_datetime);
 -- Q4) What is the average number of items per PAID order?
 --     Use a subquery or CTE over order_items filtered by order_id IN (...).
 
+SELECT order_id, 
+
 
 
 -- Q5) Which products (by product_id) have sold the most units overall across all stores?
