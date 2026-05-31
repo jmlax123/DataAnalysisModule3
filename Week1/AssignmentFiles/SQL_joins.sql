@@ -97,8 +97,24 @@ WHERE sales_rank = 1;
 -- Q6) Inventory check: show rows where on_hand < 12 in any store.
 --     Return store_name, product_name, on_hand.
 
+SELECT 
+	s.name AS store_name,
+    p.name AS product_name,
+    i.on_hand
+FROM inventory i
+INNER JOIN stores s ON i.store_id = s.store_id
+INNER JOIN products p ON i.product_id = p.product_id
+WHERE i.on_hand < 12;
+
 -- Q7) Manager roster: list each store's manager_name and hire_date.
 --     (Assume title = 'Manager').
+
+SELECT 
+	CONCAT(e.first_name, ' ', e.last_name) AS manager_name,
+    e.hire_date
+FROM employees e
+INNER JOIN stores s ON e.store_id = s.store_id
+WHERE e.title = 'Manager';
 
 -- Q8) Using a subquery/CTE: list products whose total PAID revenue is above
 --     the average PAID product revenue. Return product_name, total_revenue.
