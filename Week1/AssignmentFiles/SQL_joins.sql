@@ -49,7 +49,7 @@ GROUP BY
 	customer_name,
     store_name,
     o.order_datetime,
-    o.order_id	
+    o.order_id;	
 
 -- Q4) Left join to find customers who have never placed an order.
 --     Return first_name, last_name, city, state.
@@ -118,6 +118,21 @@ WHERE e.title = 'Manager';
 
 -- Q8) Using a subquery/CTE: list products whose total PAID revenue is above
 --     the average PAID product revenue. Return product_name, total_revenue.
+
+WITH product_revenues AS (
+	SELECT p.name, SUM(p.price * oi.quantity) AS total_revenue
+    FROM products p
+    INNER JOIN order_items oi ON p.product_id = oi.product_id
+	INNER JOIN orders o ON oi.order_id = o.order_id
+	WHERE o.status = 'paid'
+    GROUP BY p.name
+)
+SELECT name, total_revenue
+FROM product_revenues
+WHERE 
+	total_revenue > (
+		SELECT AVG(total_revenue)
+        FROM product_revenues);
 
 -- Q9) Churn-ish check: list customers with their last PAID order date.
 --     If they have no PAID orders, show NULL.

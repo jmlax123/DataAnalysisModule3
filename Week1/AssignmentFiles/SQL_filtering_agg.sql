@@ -30,14 +30,23 @@ GROUP BY DATE(order_datetime);
 -- Q4) What is the average number of items per PAID order?
 --     Use a subquery or CTE over order_items filtered by order_id IN (...).
 
-SELECT order_id, 
-
-
+WITH items_per_order AS (
+	SELECT order_id, COUNT(*) AS total_items
+    FROM order_items
+    WHERE order_id IN (
+		SELECT order_id
+        FROM orders
+        WHERE status = 'paid'
+	)
+    GROUP BY order_id
+)
+SELECT AVG(total_items)
+FROM items_per_order;
 
 -- Q5) Which products (by product_id) have sold the most units overall across all stores?
 --     Return (product_id, total_units), sorted desc.
 
-SELECT product_id, COUNT(*) AS total_units
+SELECT product_id, SUM(quantity) AS total_units
 FROM order_items
 GROUP BY product_id
 ORDER BY total_units desc;
@@ -89,6 +98,16 @@ GROUP BY store_id, payment_method;
 -- Q11) Among PAID orders, what percent used 'app' as the payment_method?
 --      Return a single row with pct_app_paid_orders (0–100).
 
+WITH payment_counts AS (
+	SELECT payment_method, COUNT(*) AS method_count
+	FROM orders
+	WHERE status = 'paid'
+	GROUP BY payment_method
+)
+SELECT 
+	(SELECT method_count FROM payment_counts WHERE payment_method = 'app')
+    /
+    (SELECT SUM(method_count) FROM payment_counts) * 100.0 AS pct_app_paid_orders;
 
 -- Q12) Busiest hour: for PAID orders, show (hour_of_day, orders_count) sorted desc.
 
