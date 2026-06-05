@@ -25,7 +25,8 @@ from products
 where name like "%Latte%";
 -- Q5) Show distinct payment methods used in the dataset.
 select distinct payment_method
-from orders
+from orders;
+
 -- Q6) For each store, list its name and city/state (one row per store).
 select name, city, state
 from stores;

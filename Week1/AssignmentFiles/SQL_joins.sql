@@ -21,7 +21,6 @@ SELECT
     s.name AS store_name, 
     p.name AS product_name, 
     oi.quantity, 
-    p.price, 
     (oi.quantity * p.price) AS line_total
 FROM order_items oi
 INNER JOIN orders o ON oi.order_id = o.order_id
@@ -137,6 +136,13 @@ WHERE
 -- Q9) Churn-ish check: list customers with their last PAID order date.
 --     If they have no PAID orders, show NULL.
 --     Hint: Put the status filter in the LEFT JOIN's ON clause to preserve non-buyer rows.
+
+SELECT 
+	concat(c.first_name, ' ', c.last_name) AS customer_name,
+    max(DATE(o.order_datetime)) AS last_order_date
+FROM customers c
+LEFT JOIN orders o on c.customer_id = o.customer_id AND o.status = 'paid'
+GROUP BY c.first_name, c.last_name, c.customer_id;
 
 -- Q10) Product mix report (PAID only):
 --     For each store and category, show total units and total revenue (= SUM(quantity * products.price)).
