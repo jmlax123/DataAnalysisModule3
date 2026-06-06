@@ -146,3 +146,23 @@ GROUP BY c.first_name, c.last_name, c.customer_id;
 
 -- Q10) Product mix report (PAID only):
 --     For each store and category, show total units and total revenue (= SUM(quantity * products.price)).
+-- stores: store_id, name
+-- categories: name, category_id
+-- products: product_id, name, price, category_id
+-- order_items: product_id, quantity
+-- orders: order_id, store_id, status
+
+SELECT 
+	s.name AS store_name,
+    c.name AS category_name,
+    SUM(oi.quantity) AS total_units,
+    SUM(oi.quantity * p.price) AS total_revenue
+FROM stores s 
+LEFT JOIN orders o ON s.store_id = o.store_id
+LEFT JOIN order_items oi ON o.order_id = oi.order_id
+LEFT JOIN products p ON oi.product_id = p.product_id
+LEFT JOIN categories c ON c.category_id = p.category_id
+WHERE o.status = 'paid'
+GROUP BY 
+	s.name,
+    c.name;
