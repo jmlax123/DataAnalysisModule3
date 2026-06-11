@@ -8,14 +8,14 @@ USE coffeeshop_db;
 -- Q1) Compute total items per order.
 --     Return (order_id, total_items) from order_items.
 
-SELECT order_id, COUNT(*) AS total_items
+SELECT order_id, SUM(quantity) AS total_items
 FROM order_items
 GROUP BY order_id;
 
 -- Q2) Compute total items per order for PAID orders only.
 --     Return (order_id, total_items). Hint: order_id IN (SELECT ... FROM orders WHERE status='paid').
 
-SELECT order_id, COUNT(*) AS total_items
+SELECT order_id, SUM(quantity) AS total_items
 FROM order_items
 WHERE order_id IN (SELECT order_id FROM orders WHERE status='paid')
 GROUP BY order_id;
@@ -31,7 +31,7 @@ GROUP BY DATE(order_datetime);
 --     Use a subquery or CTE over order_items filtered by order_id IN (...).
 
 WITH items_per_order AS (
-	SELECT order_id, COUNT(*) AS total_items
+	SELECT order_id, SUM(quantity) AS total_items
     FROM order_items
     WHERE order_id IN (
 		SELECT order_id
@@ -55,7 +55,7 @@ ORDER BY total_units desc;
 --     Return (product_id, total_units_paid), sorted desc.
 --     Hint: order_id IN (SELECT order_id FROM orders WHERE status='paid').
 
-SELECT product_id, COUNT(*) AS total_units_paid
+SELECT product_id, SUM(quantity) AS total_units_paid
 FROM order_items
 WHERE order_id IN (SELECT order_id FROM orders WHERE status='paid')
 GROUP BY product_id
@@ -76,7 +76,8 @@ SELECT DAYNAME(order_datetime) AS day_name, COUNT(*) AS orders_count
 FROM orders
 WHERE status = 'paid'
 GROUP BY DAYNAME(order_datetime)
-ORDER BY orders_count DESC;
+ORDER BY orders_count DESC
+LIMIT 1;
 
 -- Q9) Show the calendar days whose total orders (any status) exceed 3.
 --     Use HAVING. Return (order_date, orders_count).
