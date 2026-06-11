@@ -197,6 +197,24 @@ HAVING COUNT(DISTINCT o.store_id) = (SELECT COUNT(*) FROM stores);
 -- Only show rows where prev_order_datetime is NOT NULL.
 -- Sort by customer_name, order_datetime.
 
+WITH order_intervals AS (
+	SELECT
+		CONCAT(first_name, ' ', last_name) AS customer_name,
+		order_id, 
+		order_datetime,
+		LAG(order_datetime) OVER(PARTITION BY orders.customer_id ORDER BY order_datetime) AS prev_order_datetime,
+		TIMESTAMPDIFF(MINUTE, LAG(order_datetime) OVER(PARTITION BY orders.customer_id ORDER BY order_datetime), order_datetime) AS minutes_since_prev
+	FROM orders
+	LEFT JOIN customers ON orders.customer_id = customers.customer_id
+	WHERE status = 'paid'
+)
+SELECT *
+FROM order_intervals
+WHERE prev_order_datetime IS NOT NULL
+ORDER BY
+	customer_name,
+    order_datetime;
+
 -- =========================================================
 -- Q7) View: Create a reusable order line view for PAID orders
 -- =========================================================
@@ -212,6 +230,38 @@ HAVING COUNT(DISTINCT o.store_id) = (SELECT COUNT(*) FROM stores);
 -- where revenue is SUM(line_total),
 -- sorted by revenue DESC.
 
+CREATE OR REPLACE VIEW v_paid_order_lines AS
+SELECT 
+	o.order_id,
+    o.order_datetime,
+    s.store_id,
+    s.name AS store_name,
+    c.customer_id,
+    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+    p.product_id,
+    p.name AS product_name,
+    cat.name AS category_name,
+    oi.quantity,
+    p.price AS unit_price,
+    oi.quantity * p.price AS line_total
+FROM orders o
+LEFT JOIN stores s ON o.store_id = s.store_id
+LEFT JOIN customers c ON o.customer_id = c.customer_id
+LEFT JOIN order_items oi ON o.order_id = oi.order_id
+LEFT JOIN products p ON oi.product_id = p.product_id
+LEFT JOIN categories cat ON p.category_id = cat.category_id
+WHERE o.status = 'paid';
+SELECT
+	store_name,
+    category_name,
+    SUM(line_total) AS revenue
+FROM v_paid_order_lines
+GROUP BY 
+	store_name,
+    category_name
+ORDER BY revenue DESC;
+    
+
 -- =========================================================
 -- Q8) View + window: Store revenue share by payment method (PAID only)
 -- =========================================================
@@ -225,6 +275,30 @@ HAVING COUNT(DISTINCT o.store_id) = (SELECT COUNT(*) FROM stores);
 --   pct_of_store_revenue (= revenue / store_total_revenue)
 -- Sort by store_name, revenue DESC.
 
+CREATE OR REPLACE VIEW v_paid_store_payments AS
+SELECT
+	s.store_id,
+    s.name AS store_name,
+    o.payment_method,
+    SUM(oi.quantity * p.price) AS revenue
+FROM orders o
+LEFT JOIN stores s ON o.store_id = s.store_id
+LEFT JOIN order_items oi ON o.order_id = oi.order_id
+LEFT JOIN products p ON oi.product_id = p.product_id
+WHERE o.status = 'paid'
+GROUP BY
+	s.store_id,
+    s.name,
+    o.payment_method;
+SELECT
+	store_name,
+    payment_method,
+    revenue,
+    SUM(revenue) OVER(PARTITION BY store_id) AS store_total_revenue,
+    revenue / SUM(revenue) OVER(PARTITION BY store_id) AS pct_of_store_revenue
+FROM v_paid_store_payments
+ORDER BY store_name, revenue DESC;
+
 -- =========================================================
 -- Q9) CTE: Inventory risk report (low stock relative to sales)
 -- =========================================================
@@ -234,3 +308,32 @@ HAVING COUNT(DISTINCT o.store_id) = (SELECT COUNT(*) FROM stores);
 --   on_hand < total_units_sold
 -- Return: store_name, product_name, on_hand, total_units_sold, units_gap (= total_units_sold - on_hand)
 -- Sort by units_gap DESC.
+
+WITH product_sales AS (
+	SELECT
+		s.name AS store_name,
+		p.name AS product_name,
+        s.store_id,
+        p.product_id,
+		SUM(oi.quantity) AS total_units_sold
+	FROM orders o
+	LEFT JOIN stores s ON o.store_id = s.store_id
+	LEFT JOIN order_items oi ON o.order_id = oi.order_id
+	LEFT JOIN products p ON oi.product_id = p.product_id
+	WHERE o.status = 'paid'
+	GROUP BY
+		s.name,
+		p.name,
+        s.store_id,
+        p.product_id
+)
+SELECT
+	ps.store_name,
+    ps.product_name,
+    i.on_hand,
+    ps.total_units_sold,
+    total_units_sold - on_hand AS units_gap    
+FROM product_sales ps
+LEFT JOIN inventory i ON ps.store_id = i.store_id AND ps.product_id = i.product_id
+WHERE on_hand < total_units_sold
+ORDER BY units_gap DESC;
